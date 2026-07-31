@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+/* Custom print styling for A4 Textile Invoices and Packing Lists */
+@media print {
+  /* Hide interactive app UI header, tabs, buttons, forms, toolbars */
+  .no-print,
+  nav,
+  header,
+  .no-print-area,
+  .app-header,
+  .app-tabs {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 10.5pt;
+    padding: 0 !important;
+    margin: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 8mm 10mm;
+  }
+
+  .print-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+  }
+
+  .a4-document {
+    width: 100% !important;
+    min-height: auto !important;
+    padding: 0 !important;
+    margin: 0 0 15mm 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .a4-document:last-child {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  /* Table borders for print */
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  .tbl-border, .tbl-border th, .tbl-border td {
+    border: 1px solid #111827 !important;
+  }
+
+  .yard-chip {
+    background-color: transparent !important;
+    border: 1px solid #64748b !important;
+    color: #000000 !important;
+  }
+}
+
+/* Screen preview styling for standard A4 sheet feel */
+.a4-document {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 12mm 15mm;
+  margin: 0 auto;
+  background: white;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  color: #111827;
+  font-family: 'Inter', system-ui, sans-serif;
+  position: relative;
+  border: 1px solid #cbd5e1;
+}
+
+/* Yardage roll chip styling */
+.yard-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 4px;
+  margin: 1px;
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 2px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  white-space: nowrap;
+}

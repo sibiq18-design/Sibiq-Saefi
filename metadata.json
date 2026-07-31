@@ -1,0 +1,6 @@
+{
+  "name": "Surat Jalan & Invoice Grosir Tekstil",
+  "description": "Sistem Administrasi ERP/POS Grosir Tekstil (Kain/Roll) untuk pengelolaan rincian yardage roll, kalkulasi otomatis, terbilang Bahasa Indonesia, QR Code verification, serta cetak presisi A4 Surat Jalan & Invoice.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
