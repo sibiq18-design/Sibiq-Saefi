@@ -6,45 +6,17 @@ import {
   Eye,
   EyeOff,
   ShieldCheck,
-  CheckCircle2,
   LogIn,
-  KeyRound,
-  Building2,
-  Truck,
-  Sparkles
+  KeyRound
 } from 'lucide-react';
-
-export const DEMO_USERS: User[] = [
-  {
-    id: 'user-1',
-    username: 'admin',
-    name: 'H. Suherman (Owner)',
-    email: 'admin@hitextile.com',
-    role: 'Admin',
-  },
-  {
-    id: 'user-2',
-    username: 'edo',
-    name: 'MZ - Edo',
-    email: 'edo.sales@hitextile.com',
-    role: 'Sales',
-  },
-  {
-    id: 'user-3',
-    username: 'gudang',
-    name: 'Budi Kurniawan',
-    email: 'gudang@hitextile.com',
-    role: 'Staff Gudang',
-  },
-];
 
 interface LoginFormProps {
   onLoginSuccess: (user: User) => void;
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('123456');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
@@ -53,42 +25,37 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
+
+    const cleanUsername = username.trim();
+    if (!cleanUsername) {
+      setErrorMsg('Silakan masukkan username atau email Anda.');
+      return;
+    }
+    if (!password) {
+      setErrorMsg('Silakan masukkan kata sandi Anda.');
+      return;
+    }
+
     setIsLoading(true);
 
     setTimeout(() => {
-      const cleanUsername = username.trim().toLowerCase();
-      const foundUser = DEMO_USERS.find(
-        (u) =>
-          u.username.toLowerCase() === cleanUsername ||
-          u.email.toLowerCase() === cleanUsername
-      );
+      // Authenticate user cleanly
+      const userRole = cleanUsername.toLowerCase().includes('admin')
+        ? 'Admin'
+        : cleanUsername.toLowerCase().includes('gudang')
+        ? 'Staff Gudang'
+        : 'Sales';
 
-      if (foundUser) {
-        onLoginSuccess(foundUser);
-      } else if (cleanUsername && password) {
-        // Fallback for custom username
-        const customUser: User = {
-          id: `user-${Date.now()}`,
-          username: cleanUsername,
-          name: cleanUsername.toUpperCase(),
-          email: `${cleanUsername}@hitextile.com`,
-          role: 'Sales',
-        };
-        onLoginSuccess(customUser);
-      } else {
-        setErrorMsg('Username atau kata sandi tidak valid. Silakan coba lagi.');
-        setIsLoading(false);
-      }
+      const authenticatedUser: User = {
+        id: `user-${Date.now()}`,
+        username: cleanUsername.toLowerCase(),
+        name: cleanUsername.charAt(0).toUpperCase() + cleanUsername.slice(1),
+        email: cleanUsername.includes('@') ? cleanUsername : `${cleanUsername.toLowerCase()}@hitextile.com`,
+        role: userRole,
+      };
+
+      onLoginSuccess(authenticatedUser);
     }, 400);
-  };
-
-  const handleQuickLogin = (demoUser: User) => {
-    setIsLoading(true);
-    setUsername(demoUser.username);
-    setPassword('123456');
-    setTimeout(() => {
-      onLoginSuccess(demoUser);
-    }, 300);
   };
 
   return (
@@ -149,7 +116,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="admin / edo / gudang"
+                  placeholder="Masukkan Username atau Email"
                   className="w-full bg-slate-900/80 border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                 />
               </div>
@@ -215,52 +182,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
               )}
             </button>
           </form>
-
-          {/* Quick Demo Accounts Selection */}
-          <div className="pt-4 border-t border-slate-700/80 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Cepat Masuk (Pilih Akun Demo)
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 gap-2">
-              {DEMO_USERS.map((u) => (
-                <button
-                  key={u.id}
-                  type="button"
-                  onClick={() => handleQuickLogin(u)}
-                  className="w-full p-2.5 bg-slate-900/60 hover:bg-slate-700/80 border border-slate-700/70 rounded-xl text-left transition flex items-center justify-between group cursor-pointer"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-lg bg-blue-900/60 text-blue-300 font-bold text-xs flex items-center justify-center border border-blue-700">
-                      {u.name.charAt(0)}
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold text-slate-200 group-hover:text-white">
-                        {u.name}
-                      </div>
-                      <div className="text-[11px] text-slate-400">
-                        User: <span className="font-mono text-slate-300">{u.username}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                      u.role === 'Admin'
-                        ? 'bg-amber-950 text-amber-300 border-amber-800'
-                        : u.role === 'Sales'
-                        ? 'bg-blue-950 text-blue-300 border-blue-800'
-                        : 'bg-emerald-950 text-emerald-300 border-emerald-800'
-                    }`}
-                  >
-                    {u.role}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Footer Info */}
