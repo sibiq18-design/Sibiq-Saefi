@@ -45,3 +45,24 @@ export function formatDateIndonesian(dateString: string): string {
 
   return `${day} ${month} ${year}`;
 }
+
+/**
+ * Generates distinct and realistic unique numbers for Surat Jalan, Bukti SO, and Invoice
+ */
+export function generateUniqueDocNumbers() {
+  const now = new Date();
+  const yy = String(now.getFullYear()).slice(-2);
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  
+  // Random 4-digit sequential pad for uniqueness per call
+  const seq1 = Math.floor(1000 + Math.random() * 9000);
+  const seq2 = Math.floor(1000 + Math.random() * 9000);
+  const seq3 = Math.floor(1000 + Math.random() * 9000);
+
+  return {
+    noSuratJalan: `DMGB/OUT/${yy}${mm}/0${seq1}`,
+    noBuktiSO: `BLUE/SO${yy}${mm}/${seq2}`,
+    noInvoice: `BLUE/INV/${yy}/${mm}/${seq3}`,
+    noOrder: `BLUE/SO${yy}${mm}/${seq2}`,
+  };
+}

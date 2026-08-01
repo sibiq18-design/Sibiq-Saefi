@@ -16,7 +16,7 @@ import {
 import { DocumentData, TextileItem } from '../types';
 import { RollYardageEditor } from './RollYardageEditor';
 import { sampleTextileData } from '../data/sampleData';
-import { formatRupiah, formatYard } from '../utils/formatters';
+import { formatRupiah, formatYard, generateUniqueDocNumbers } from '../utils/formatters';
 
 interface FormInputProps {
   data: DocumentData;
@@ -112,6 +112,18 @@ export const FormInput: React.FC<FormInputProps> = ({
       onChange({ ...data, items: [] });
       setActiveItemIndex(null);
     }
+  };
+
+  // Generate unique document numbers for Surat Jalan, SO, and Invoice
+  const handleGenerateUniqueNumbers = () => {
+    const freshNums = generateUniqueDocNumbers();
+    onChange({
+      ...data,
+      noSuratJalan: freshNums.noSuratJalan,
+      noBuktiSO: freshNums.noBuktiSO,
+      noInvoice: freshNums.noInvoice,
+      noOrder: freshNums.noOrder,
+    });
   };
 
   // Summary stats
@@ -286,9 +298,20 @@ export const FormInput: React.FC<FormInputProps> = ({
 
       {/* Grid Section 2: Header Identifiers & Dates */}
       <div className="bg-white rounded-xl shadow-xs border border-slate-200 p-4 space-y-3">
-        <div className="flex items-center gap-2 pb-2 border-b border-slate-100 text-slate-800">
-          <FileText className="w-4 h-4 text-indigo-600" />
-          <h3 className="font-bold text-sm">Nomor Dokumen & Tanggal Transaksi</h3>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 border-b border-slate-100 gap-2">
+          <div className="flex items-center gap-2 text-slate-800">
+            <FileText className="w-4 h-4 text-indigo-600" />
+            <h3 className="font-bold text-sm">Nomor Dokumen & Tanggal Transaksi</h3>
+          </div>
+          <button
+            type="button"
+            onClick={handleGenerateUniqueNumbers}
+            className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 font-semibold rounded-lg text-[11px] transition flex items-center justify-center gap-1.5 cursor-pointer"
+            title="Generate nomor unik otomatis untuk Surat Jalan, Bukti SO, dan Invoice"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-indigo-600" />
+            Acak / Buat No. Dokumen Baru
+          </button>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">

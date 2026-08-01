@@ -14,35 +14,39 @@ import {
   deleteTransactionFromDb,
   SavedTransaction,
 } from './lib/firebase';
+import { generateUniqueDocNumbers } from './utils/formatters';
 import { Printer, Edit3, Sparkles, FileText, CheckCircle2, ArrowRight, Check } from 'lucide-react';
 
 const LOCAL_STORAGE_KEY = 'textile_wholesale_erp_data_v1';
 const USER_STORAGE_KEY = 'textile_wholesale_erp_user_v1';
 
-export const getBlankDocumentData = (): DocumentData => ({
-  companyName: '',
-  companySubtitle: '',
-  companyAddress: '',
-  companyPhone: '',
-  noSuratJalan: `SJ/OUT/${new Date().getFullYear()}/001`,
-  noBuktiSO: `SO/${new Date().getFullYear()}/001`,
-  noInvoice: `INV/${new Date().getFullYear()}/001`,
-  noOrder: `ORDER/${new Date().getFullYear()}/001`,
-  noPO: '-',
-  sales: '',
-  tanggalSuratJalan: new Date().toISOString().split('T')[0],
-  tanggalInvoice: new Date().toISOString().split('T')[0],
-  jatuhTempo: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
-  customerName: '',
-  customerCompany: '',
-  customerAddress: '',
-  customerPhone: '',
-  halamanSuratJalan: '1 dari 1',
-  halamanInvoice: '1 / 1',
-  noteSuratJalan: 'Telah diterima dengan keadaan baik barang-barang tersebut.',
-  noteInvoice: 'Barang yang sudah dipotong tidak dapat diklaim.',
-  items: [],
-});
+export const getBlankDocumentData = (): DocumentData => {
+  const nums = generateUniqueDocNumbers();
+  return {
+    companyName: '',
+    companySubtitle: '',
+    companyAddress: '',
+    companyPhone: '',
+    noSuratJalan: nums.noSuratJalan,
+    noBuktiSO: nums.noBuktiSO,
+    noInvoice: nums.noInvoice,
+    noOrder: nums.noOrder,
+    noPO: '-',
+    sales: '',
+    tanggalSuratJalan: new Date().toISOString().split('T')[0],
+    tanggalInvoice: new Date().toISOString().split('T')[0],
+    jatuhTempo: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+    customerName: '',
+    customerCompany: '',
+    customerAddress: '',
+    customerPhone: '',
+    halamanSuratJalan: '1 dari 1',
+    halamanInvoice: '1 / 1',
+    noteSuratJalan: 'Telah diterima dengan keadaan baik barang-barang tersebut.',
+    noteInvoice: 'Barang yang sudah dipotong tidak dapat diklaim.',
+    items: [],
+  };
+};
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -189,7 +193,14 @@ export default function App() {
         'Muat data contoh Rayon Twill? Data di form saat ini akan diganti dengan data contoh.'
       )
     ) {
-      setData(sampleTextileData);
+      const freshNums = generateUniqueDocNumbers();
+      setData({
+        ...sampleTextileData,
+        noSuratJalan: freshNums.noSuratJalan,
+        noBuktiSO: freshNums.noBuktiSO,
+        noInvoice: freshNums.noInvoice,
+        noOrder: freshNums.noOrder,
+      });
       setActiveTransactionId(null);
     }
   };
