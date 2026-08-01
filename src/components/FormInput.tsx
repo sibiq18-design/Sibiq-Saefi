@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import { DocumentData, TextileItem } from '../types';
 import { RollYardageEditor } from './RollYardageEditor';
-import { GoogleSheetsSync } from './GoogleSheetsSync';
 import { sampleTextileData } from '../data/sampleData';
 import { formatRupiah, formatYard } from '../utils/formatters';
 
@@ -72,12 +71,12 @@ export const FormInput: React.FC<FormInputProps> = ({
   const handleAddItem = () => {
     const newItem: TextileItem = {
       id: `item-${Date.now()}`,
-      kode: 'MTX-191976/100',
-      namaBarang: 'RAYON TWILL UNIQLO',
-      kodeWarna: '100',
-      namaWarna: 'WARNA BARU',
-      rolls: [60.00, 60.00, 60.00, 60.00, 60.00], // default 5 rolls
-      hargaSatuan: 15250,
+      kode: '',
+      namaBarang: '',
+      kodeWarna: '',
+      namaWarna: '',
+      rolls: [],
+      hargaSatuan: 0,
       diskonPersen: 0,
     };
     const updated = [...data.items, newItem];
@@ -102,13 +101,17 @@ export const FormInput: React.FC<FormInputProps> = ({
 
   // Delete item
   const handleDeleteItem = (index: number) => {
-    if (data.items.length <= 1) {
-      alert('Minimal harus ada 1 item transaksi kain.');
-      return;
-    }
     const updated = data.items.filter((_, i) => i !== index);
     onChange({ ...data, items: updated });
-    setActiveItemIndex(updated.length > 0 ? 0 : null);
+    setActiveItemIndex(updated.length > 0 ? Math.min(index, updated.length - 1) : null);
+  };
+
+  // Clear all items
+  const handleClearAllItems = () => {
+    if (window.confirm('Apakah Anda yakin ingin menghapus semua item dari daftar?')) {
+      onChange({ ...data, items: [] });
+      setActiveItemIndex(null);
+    }
   };
 
   // Summary stats
@@ -155,9 +158,6 @@ export const FormInput: React.FC<FormInputProps> = ({
           </button>
         </div>
       </div>
-
-      {/* Google Sheets Sync Integration Section */}
-      <GoogleSheetsSync data={data} />
 
       {/* Grid Section 1: Customer & Company Info */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -446,13 +446,16 @@ export const FormInput: React.FC<FormInputProps> = ({
               <span className="font-bold text-slate-800">{totalRolls} Roll</span> / {formatYard(totalYards)}
             </div>
 
-            <button
-              type="button"
-              onClick={handleAddItem}
-              className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow transition flex items-center gap-1.5 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" /> Tambah Item
-            </button>
+            {data.items.length > 0 && (
+              <button
+                type="button"
+                onClick={handleClearAllItems}
+                className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs rounded-lg transition flex items-center gap-1.5 cursor-pointer"
+                title="Hapus seluruh item dari daftar"
+              >
+                <Trash2 className="w-4 h-4" /> Hapus Semua Item
+              </button>
+            )}
           </div>
         </div>
 
@@ -666,6 +669,21 @@ export const FormInput: React.FC<FormInputProps> = ({
             );
           }))}
         </div>
+
+        {data.items.length > 0 && (
+          <div className="pt-3 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200">
+            <span className="text-xs text-slate-500 font-medium">
+              Total {data.items.length} item kain terdaftar dalam transaksi ini.
+            </span>
+            <button
+              type="button"
+              onClick={handleAddItem}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" /> Tambah Item Kain Baru
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Notes & Terms Section */}

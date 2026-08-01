@@ -1,3 +1,11 @@
+export interface User {
+  id: string;
+  username: string;
+  name: string;
+  email: string;
+  role: 'Admin' | 'Sales' | 'Staff Gudang';
+}
+
 export interface TextileItem {
   id: string;
   kode: string;
@@ -44,4 +52,4 @@ export interface DocumentData {
   items: TextileItem[];
 }
 
-export type ViewMode = 'edit' | 'surat_jalan' | 'invoice' | 'print_all';
+export type ViewMode = 'dashboard' | 'edit' | 'surat_jalan' | 'invoice' | 'print_all' | 'history';

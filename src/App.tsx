@@ -1,13 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { ViewMode, DocumentData } from './types';
+import { ViewMode, DocumentData, User } from './types';
 import { sampleTextileData } from './data/sampleData';
 import { Navbar } from './components/Navbar';
 import { FormInput } from './components/FormInput';
 import { SuratJalanDoc } from './components/SuratJalanDoc';
 import { InvoiceDoc } from './components/InvoiceDoc';
-import { Printer, Edit3, Sparkles, FileText, CheckCircle2, ArrowRight } from 'lucide-react';
+import { LoginForm } from './components/LoginForm';
+import { TransactionHistory } from './components/TransactionHistory';
+import { Dashboard } from './components/Dashboard';
+import {
+  subscribeTransactions,
+  saveTransactionToDb,
+  deleteTransactionFromDb,
+  SavedTransaction,
+} from './lib/firebase';
+import { Printer, Edit3, Sparkles, FileText, CheckCircle2, ArrowRight, Check } from 'lucide-react';
 
 const LOCAL_STORAGE_KEY = 'textile_wholesale_erp_data_v1';
+const USER_STORAGE_KEY = 'textile_wholesale_erp_user_v1';
 
 export const getBlankDocumentData = (): DocumentData => ({
   companyName: '',
@@ -35,6 +45,18 @@ export const getBlankDocumentData = (): DocumentData => ({
 });
 
 export default function App() {
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    try {
+      const savedUser = localStorage.getItem(USER_STORAGE_KEY);
+      if (savedUser) {
+        return JSON.parse(savedUser);
+      }
+    } catch (e) {
+      console.error('Failed to load user session:', e);
+    }
+    return null;
+  });
+
   const [data, setData] = useState<DocumentData>(() => {
     try {
       localStorage.removeItem(LOCAL_STORAGE_KEY);
@@ -44,8 +66,36 @@ export default function App() {
     return getBlankDocumentData();
   });
 
-  const [currentView, setCurrentView] = useState<ViewMode>('edit');
+  const [currentView, setCurrentView] = useState<ViewMode>('dashboard');
   const [isSaved, setIsSaved] = useState(true);
+
+  // Firebase Database States
+  const [savedTransactions, setSavedTransactions] = useState<SavedTransaction[]>([]);
+  const [isDbLoading, setIsDbLoading] = useState(true);
+  const [activeTransactionId, setActiveTransactionId] = useState<string | null>(null);
+  const [isSavingDb, setIsSavingDb] = useState(false);
+  const [saveToast, setSaveToast] = useState<{ show: boolean; msg: string }>({
+    show: false,
+    msg: '',
+  });
+
+  // Subscribe to real-time Firestore database
+  useEffect(() => {
+    if (!currentUser) return;
+    setIsDbLoading(true);
+    const unsubscribe = subscribeTransactions(
+      (list) => {
+        setSavedTransactions(list);
+        setIsDbLoading(false);
+      },
+      (err) => {
+        console.error('Firestore error:', err);
+        setIsDbLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [currentUser]);
 
   // Auto-save to localStorage on data change
   useEffect(() => {
@@ -62,22 +112,102 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [data]);
 
+  const handleLoginSuccess = (user: User) => {
+    setCurrentUser(user);
+    try {
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+    } catch (e) {
+      console.error('Failed to save user session:', e);
+    }
+  };
+
+  const handleLogout = () => {
+    if (window.confirm('Apakah Anda yakin ingin keluar (Log Out) dari sistem?')) {
+      setCurrentUser(null);
+      try {
+        localStorage.removeItem(USER_STORAGE_KEY);
+      } catch (e) {
+        console.error('Failed to clear user session:', e);
+      }
+    }
+  };
+
+  // Save current transaction to Firestore Database
+  const handleSaveToDatabase = async () => {
+    setIsSavingDb(true);
+    try {
+      const docId = await saveTransactionToDb(data, activeTransactionId || undefined);
+      setActiveTransactionId(docId);
+      setSaveToast({
+        show: true,
+        msg: `Transaksi "${data.noSuratJalan || 'Berhasil'}" tersimpan di Database Firestore!`,
+      });
+      setTimeout(() => setSaveToast({ show: false, msg: '' }), 4000);
+    } catch (err) {
+      alert('Gagal menyimpan transaksi ke database. Pastikan koneksi internet stabil.');
+    } finally {
+      setIsSavingDb(false);
+    }
+  };
+
+  // Load transaction from history
+  const handleSelectTransaction = (trans: SavedTransaction) => {
+    setData(trans.data);
+    setActiveTransactionId(trans.id);
+    setCurrentView('edit');
+  };
+
+  // Create new blank transaction
+  const handleNewTransaction = () => {
+    setData(getBlankDocumentData());
+    setActiveTransactionId(null);
+    setCurrentView('edit');
+  };
+
+  // Delete transaction from Firestore
+  const handleDeleteTransaction = async (id: string) => {
+    await deleteTransactionFromDb(id);
+    if (activeTransactionId === id) {
+      setActiveTransactionId(null);
+    }
+  };
+
+  // Quick view doc from history
+  const handleViewDocFromHistory = (
+    trans: SavedTransaction,
+    view: 'surat_jalan' | 'invoice'
+  ) => {
+    setData(trans.data);
+    setActiveTransactionId(trans.id);
+    setCurrentView(view);
+  };
+
   // Load sample Rayon Twill data
   const handleLoadSample = () => {
-    if (window.confirm('Muat data contoh Rayon Twill? Data di form saat ini akan diganti dengan data contoh.')) {
+    if (
+      window.confirm(
+        'Muat data contoh Rayon Twill? Data di form saat ini akan diganti dengan data contoh.'
+      )
+    ) {
       setData(sampleTextileData);
+      setActiveTransactionId(null);
     }
   };
 
   // Reset data to empty template
   const handleReset = () => {
-    if (window.confirm('Apakah Anda yakin ingin mengosongkan seluruh isi form? Data customer dan item kain akan dihapus.')) {
+    if (
+      window.confirm(
+        'Apakah Anda yakin ingin mengosongkan seluruh isi form? Data customer dan item kain akan dihapus.'
+      )
+    ) {
       try {
         localStorage.removeItem(LOCAL_STORAGE_KEY);
       } catch (e) {
         console.error('Failed to clear local storage:', e);
       }
       setData(getBlankDocumentData());
+      setActiveTransactionId(null);
     }
   };
 
@@ -110,22 +240,54 @@ export default function App() {
     return sum + gross * (1 - item.diskonPersen / 100);
   }, 0);
 
+  // Render Login screen if not authenticated
+  if (!currentUser) {
+    return <LoginForm onLoginSuccess={handleLoginSuccess} />;
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-100 text-slate-800 font-sans">
+      {/* Toast Notification */}
+      {saveToast.show && (
+        <div className="no-print fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center gap-3 animate-bounce">
+          <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold">
+            <Check className="w-5 h-5" />
+          </div>
+          <p className="text-xs font-semibold text-slate-100">{saveToast.msg}</p>
+        </div>
+      )}
+
       {/* Top Navbar */}
       <Navbar
         currentView={currentView}
         onViewChange={setCurrentView}
         onPrint={handlePrint}
         onLoadSample={handleLoadSample}
-        isSaved={isSaved}
+        onSaveToDatabase={handleSaveToDatabase}
+        isSavingDb={isSavingDb}
+        dbSavedCount={savedTransactions.length}
         totalRolls={totalRolls}
         totalYards={totalYards}
         grandTotal={grandTotal}
+        user={currentUser}
+        onLogout={handleLogout}
       />
 
       {/* Main Workspace Body */}
       <main className="flex-1 p-3 sm:p-6 print-container">
+        {/* MODE 0: DASHBOARD */}
+        {currentView === 'dashboard' && (
+          <Dashboard
+            transactions={savedTransactions}
+            isLoading={isDbLoading}
+            currentUser={currentUser}
+            onViewChange={setCurrentView}
+            onNewTransaction={handleNewTransaction}
+            onSelectTransaction={handleSelectTransaction}
+            onLoadSample={handleLoadSample}
+          />
+        )}
+
         {/* MODE 1: EDIT FORM */}
         {currentView === 'edit' && (
           <FormInput
@@ -224,7 +386,20 @@ export default function App() {
           </div>
         )}
 
-        {/* MODE 4: DUAL VIEW / CETAK SEMUA */}
+        {/* MODE 4: DATABASE RIWAYAT */}
+        {currentView === 'history' && (
+          <TransactionHistory
+            transactions={savedTransactions}
+            isLoading={isDbLoading}
+            activeTransactionId={activeTransactionId}
+            onSelectTransaction={handleSelectTransaction}
+            onDeleteTransaction={handleDeleteTransaction}
+            onNewTransaction={handleNewTransaction}
+            onViewDoc={handleViewDocFromHistory}
+          />
+        )}
+
+        {/* MODE 5: DUAL VIEW / CETAK SEMUA */}
         {currentView === 'print_all' && (
           <div className="space-y-8 max-w-5xl mx-auto pb-12">
             <div className="no-print bg-slate-900 text-white p-4 rounded-xl shadow-md flex flex-wrap items-center justify-between gap-3">
@@ -278,3 +453,4 @@ export default function App() {
     </div>
   );
 }
+

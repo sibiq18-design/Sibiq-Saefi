@@ -1,0 +1,33 @@
+{
+  "entities": {
+    "transactions": {
+      "title": "Transaksi Grosir Tekstil",
+      "description": "Menyimpan data dokumen Surat Jalan dan Invoice grosir kain beserta rincian yardage roll.",
+      "type": "collection",
+      "path": "transactions",
+      "fields": {
+        "noSuratJalan": { "type": "string" },
+        "noBuktiSO": { "type": "string" },
+        "tanggal": { "type": "string" },
+        "noInvoice": { "type": "string" },
+        "tanggalInvoice": { "type": "string" },
+        "jatuhTempo": { "type": "string" },
+        "noOrder": { "type": "string" },
+        "noPO": { "type": "string" },
+        "sales": { "type": "string" },
+        "customerName": { "type": "string" },
+        "companyName": { "type": "string" },
+        "customerAddress": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "noteSuratJalan": { "type": "string" },
+        "noteInvoice": { "type": "string" },
+        "items": { "type": "array" },
+        "totalRolls": { "type": "number" },
+        "totalYards": { "type": "number" },
+        "grandTotal": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      }
+    }
+  }
+}
