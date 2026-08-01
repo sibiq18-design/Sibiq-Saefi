@@ -8,6 +8,7 @@ import { InvoiceDoc } from './components/InvoiceDoc';
 import { LoginForm } from './components/LoginForm';
 import { TransactionHistory } from './components/TransactionHistory';
 import { Dashboard } from './components/Dashboard';
+import { Sidebar } from './components/Sidebar';
 import {
   subscribeTransactions,
   saveTransactionToDb,
@@ -222,22 +223,50 @@ export default function App() {
     }
   };
 
-  // Handle print action
-  const handlePrint = () => {
-    window.print();
+  // Helper to generate print document title (Nama Customer + No. Invoice)
+  const getPdfDocumentTitle = () => {
+    const custName = (data.customerName || data.customerCompany || 'Customer').trim();
+    const invNo = (data.noInvoice || data.noSuratJalan || 'INV').trim();
+
+    // Sanitize slashes and special characters for clean OS filename saving
+    const cleanCust = custName.replace(/[/\\?%*:|"<>]/g, '_');
+    const cleanInv = invNo.replace(/[/\\?%*:|"<>]/g, '-');
+
+    return `${cleanCust} - ${cleanInv}`;
   };
 
-  // Keyboard shortcut listener (Ctrl+P / Cmd+P)
+  // Handle print action
+  const handlePrint = () => {
+    const prevTitle = document.title;
+    const printTitle = getPdfDocumentTitle();
+    document.title = printTitle;
+    window.print();
+    setTimeout(() => {
+      document.title = prevTitle;
+    }, 1500);
+  };
+
+  // Keyboard shortcut listener (Ctrl+P / Cmd+P) & browser native print event
   useEffect(() => {
+    const handleBeforePrint = () => {
+      document.title = getPdfDocumentTitle();
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
         e.preventDefault();
-        window.print();
+        handlePrint();
       }
     };
+
+    window.addEventListener('beforeprint', handleBeforePrint);
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+
+    return () => {
+      window.removeEventListener('beforeprint', handleBeforePrint);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [data]);
 
   // Totals calculation
   const totalRolls = data.items.reduce((sum, item) => sum + item.rolls.length, 0);
@@ -257,7 +286,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-100 text-slate-800 font-sans">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-slate-100 text-slate-800 font-sans">
       {/* Toast Notification */}
       {saveToast.show && (
         <div className="no-print fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center gap-3 animate-bounce">
@@ -268,25 +297,28 @@ export default function App() {
         </div>
       )}
 
-      {/* Top Navbar */}
-      <Navbar
+      {/* Left Sidebar Navigation */}
+      <Sidebar
         currentView={currentView}
         onViewChange={setCurrentView}
         onPrint={handlePrint}
         onLoadSample={handleLoadSample}
         onSaveToDatabase={handleSaveToDatabase}
+        onNewTransaction={handleNewTransaction}
         isSavingDb={isSavingDb}
         dbSavedCount={savedTransactions.length}
         totalRolls={totalRolls}
         totalYards={totalYards}
         grandTotal={grandTotal}
+        customerName={data.customerName}
         user={currentUser}
         onLogout={handleLogout}
       />
 
-      {/* Main Workspace Body */}
-      <main className="flex-1 p-3 sm:p-6 print-container">
-        {/* MODE 0: DASHBOARD */}
+      {/* Main Content Workspace Area */}
+      <div className="flex-1 min-w-0 flex flex-col">
+        <main className="flex-1 p-3 sm:p-6 print-container overflow-y-auto">
+          {/* MODE 0: DASHBOARD */}
         {currentView === 'dashboard' && (
           <Dashboard
             transactions={savedTransactions}
@@ -462,6 +494,7 @@ export default function App() {
         )}
       </main>
     </div>
+  </div>
   );
 }
 

@@ -50,20 +50,20 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [showUserDropdown, setShowUserDropdown] = useState(false);
 
   return (
-    <header className="no-print bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-50 shadow-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-2">
+    <header className="no-print bg-slate-900/95 backdrop-blur-md text-white border-b border-slate-800 sticky top-0 z-50 shadow-md">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 gap-3">
           {/* Brand Logo & Title */}
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-lg flex items-center justify-center text-white shadow-md font-black text-lg tracking-wider">
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 via-indigo-600 to-indigo-500 rounded-xl flex items-center justify-center text-white shadow-lg font-black text-xs tracking-widest border border-indigo-400/30">
               TXT
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="font-bold text-sm sm:text-base tracking-tight text-white">
-                  Grosir Tekstil ERP
+                <h1 className="font-bold text-sm sm:text-base tracking-tight text-white flex items-center gap-1.5">
+                  Grosir Tekstil <span className="text-blue-400 font-medium">ERP</span>
                 </h1>
-                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-950 text-emerald-400 border border-emerald-800">
+                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800/80">
                   <Database className="w-3 h-3 text-emerald-400" />
                   Firestore Sync
                 </span>
@@ -72,27 +72,27 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* View Toggle Tabs */}
-          <div className="flex items-center bg-slate-800 p-1 rounded-xl border border-slate-700/80 text-xs">
+          <div className="flex items-center bg-slate-800/90 p-1 rounded-xl border border-slate-700/80 text-xs overflow-x-auto max-w-full">
             <button
               type="button"
               onClick={() => onViewChange('dashboard')}
-              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg font-medium transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition cursor-pointer whitespace-nowrap ${
                 currentView === 'dashboard'
-                  ? 'bg-blue-600 text-white font-bold shadow-xs'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
               }`}
             >
-              <LayoutDashboard className="w-3.5 h-3.5 text-blue-300" />
+              <LayoutDashboard className="w-3.5 h-3.5" />
               <span>Dashboard</span>
             </button>
 
             <button
               type="button"
               onClick={() => onViewChange('edit')}
-              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg font-medium transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition cursor-pointer whitespace-nowrap ${
                 currentView === 'edit'
-                  ? 'bg-blue-600 text-white font-bold shadow-xs'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
               }`}
             >
               <Edit3 className="w-3.5 h-3.5" />
@@ -102,10 +102,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={() => onViewChange('surat_jalan')}
-              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg font-medium transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition cursor-pointer whitespace-nowrap ${
                 currentView === 'surat_jalan'
-                  ? 'bg-blue-600 text-white font-bold shadow-xs'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
               }`}
             >
               <Truck className="w-3.5 h-3.5" />
@@ -115,10 +115,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={() => onViewChange('invoice')}
-              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg font-medium transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition cursor-pointer whitespace-nowrap ${
                 currentView === 'invoice'
-                  ? 'bg-blue-600 text-white font-bold shadow-xs'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
               }`}
             >
               <Receipt className="w-3.5 h-3.5" />
@@ -128,14 +128,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={() => onViewChange('history')}
-              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg font-medium transition cursor-pointer relative ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition cursor-pointer whitespace-nowrap relative ${
                 currentView === 'history'
-                  ? 'bg-emerald-600 text-white font-bold shadow-xs'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
               }`}
             >
               <Database className="w-3.5 h-3.5 text-emerald-300" />
-              <span>Database Riwayat</span>
+              <span>Riwayat</span>
               {dbSavedCount > 0 && (
                 <span className="ml-0.5 px-1.5 py-0.2 bg-emerald-950 text-emerald-300 rounded-full text-[10px] font-bold border border-emerald-800">
                   {dbSavedCount}
@@ -146,10 +146,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={() => onViewChange('print_all')}
-              className={`hidden md:flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg font-medium transition cursor-pointer ${
+              className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition cursor-pointer whitespace-nowrap ${
                 currentView === 'print_all'
-                  ? 'bg-blue-600 text-white font-bold shadow-xs'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
@@ -158,12 +158,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Action Buttons & User Profile */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={onSaveToDatabase}
               disabled={isSavingDb}
-              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-xs shadow transition flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
+              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs shadow transition flex items-center gap-1.5 cursor-pointer disabled:opacity-60 border border-indigo-500/50"
               title="Simpan Dokumen ini Ke Cloud Firestore"
             >
               {isSavingDb ? (
@@ -182,10 +182,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={onPrint}
-              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs shadow transition flex items-center gap-1.5 cursor-pointer"
+              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs shadow transition flex items-center gap-1.5 cursor-pointer border border-emerald-500/50"
             >
               <Printer className="w-4 h-4" />
-              <span className="hidden lg:inline">Cetak / Simpan PDF</span>
+              <span className="hidden lg:inline">Cetak PDF</span>
             </button>
 
             {/* User Profile Badge & Dropdown */}
@@ -216,7 +216,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <div className="px-3.5 py-2">
                       <p className="text-xs font-bold text-white truncate">{user.name}</p>
                       <p className="text-[11px] text-slate-400 truncate">{user.email}</p>
-                      <span className="mt-1 inline-block px-2 py-0.5 text-[10px] font-bold rounded bg-blue-950 text-blue-300 border border-blue-800">
+                      <span className="mt-1 inline-block px-2 py-0.5 text-[10px] font-bold rounded-md bg-blue-950 text-blue-300 border border-blue-800">
                         {user.role}
                       </span>
                     </div>
