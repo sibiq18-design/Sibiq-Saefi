@@ -9,6 +9,7 @@ import { LoginForm } from './components/LoginForm';
 import { TransactionHistory } from './components/TransactionHistory';
 import { Dashboard } from './components/Dashboard';
 import { Sidebar } from './components/Sidebar';
+import { VerificationModal } from './components/VerificationModal';
 import {
   subscribeTransactions,
   saveTransactionToDb,
@@ -16,24 +17,24 @@ import {
   SavedTransaction,
 } from './lib/firebase';
 import { generateUniqueDocNumbers } from './utils/formatters';
-import { Printer, Edit3, Sparkles, FileText, CheckCircle2, ArrowRight, Check } from 'lucide-react';
+import { Printer, Edit3, Sparkles, FileText, CheckCircle2, ArrowRight, Check, ShieldCheck, QrCode } from 'lucide-react';
 
-const LOCAL_STORAGE_KEY = 'textile_wholesale_erp_data_v1';
 const USER_STORAGE_KEY = 'textile_wholesale_erp_user_v1';
+const getUserStorageKey = (userId: string) => `textile_wholesale_erp_data_user_${userId}`;
 
-export const getBlankDocumentData = (): DocumentData => {
+export const getBlankDocumentData = (user?: User | null): DocumentData => {
   const nums = generateUniqueDocNumbers();
   return {
-    companyName: '',
-    companySubtitle: '',
-    companyAddress: '',
-    companyPhone: '',
+    companyName: user?.companyName || 'PT. HITEXTILE UTAMA GROSIR',
+    companySubtitle: 'Supplier & Distributor Resmi Kain Tekstil Grosir',
+    companyAddress: 'Jl. Tekstil Raya No. 88, Kopo, Bandung, Jawa Barat',
+    companyPhone: '022-5432100 / 0812-9876-5432',
     noSuratJalan: nums.noSuratJalan,
     noBuktiSO: nums.noBuktiSO,
     noInvoice: nums.noInvoice,
     noOrder: nums.noOrder,
     noPO: '-',
-    sales: '',
+    sales: user?.name || 'Sales Representative',
     tanggalSuratJalan: new Date().toISOString().split('T')[0],
     tanggalInvoice: new Date().toISOString().split('T')[0],
     jatuhTempo: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
@@ -63,16 +64,30 @@ export default function App() {
   });
 
   const [data, setData] = useState<DocumentData>(() => {
+    if (!currentUser) return sampleTextileData;
     try {
-      localStorage.removeItem(LOCAL_STORAGE_KEY);
+      const saved = localStorage.getItem(getUserStorageKey(currentUser.id));
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && Array.isArray(parsed.items)) {
+          return parsed;
+        }
+      }
     } catch (e) {
-      console.error('Failed to clear local storage:', e);
+      console.error('Failed to load local storage:', e);
     }
-    return getBlankDocumentData();
+    return {
+      ...sampleTextileData,
+      sales: currentUser.name || sampleTextileData.sales,
+      companyName: currentUser.companyName || sampleTextileData.companyName,
+    };
   });
 
   const [currentView, setCurrentView] = useState<ViewMode>('dashboard');
   const [isSaved, setIsSaved] = useState(true);
+
+  // Verification Modal State
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
 
   // Firebase Database States
   const [savedTransactions, setSavedTransactions] = useState<SavedTransaction[]>([]);
@@ -84,11 +99,49 @@ export default function App() {
     msg: '',
   });
 
-  // Subscribe to real-time Firestore database
+  // Check URL query parameters for ?verify= or ?inv= or ?sj= on initial load
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const verifyCode = params.get('verify') || params.get('inv') || params.get('sj');
+    if (verifyCode) {
+      setShowVerificationModal(true);
+      setCurrentView('invoice');
+    }
+  }, []);
+
+  // Update active user data on user login switch
+  useEffect(() => {
+    if (!currentUser) return;
+    try {
+      const userKey = getUserStorageKey(currentUser.id);
+      const saved = localStorage.getItem(userKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && Array.isArray(parsed.items)) {
+          setData(parsed);
+          return;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load user data:', e);
+    }
+
+    // Default sample tailored to user if no prior saved state
+    setData({
+      ...sampleTextileData,
+      sales: currentUser.name || sampleTextileData.sales,
+      companyName: currentUser.companyName || sampleTextileData.companyName,
+    });
+    setActiveTransactionId(null);
+  }, [currentUser?.id]);
+
+  // Subscribe to real-time Firestore database for the active user
   useEffect(() => {
     if (!currentUser) return;
     setIsDbLoading(true);
     const unsubscribe = subscribeTransactions(
+      currentUser.id,
       (list) => {
         setSavedTransactions(list);
         setIsDbLoading(false);
@@ -100,14 +153,15 @@ export default function App() {
     );
 
     return () => unsubscribe();
-  }, [currentUser]);
+  }, [currentUser?.id]);
 
-  // Auto-save to localStorage on data change
+  // Auto-save to user-isolated localStorage on data change
   useEffect(() => {
+    if (!currentUser) return;
     setIsSaved(false);
     const timer = setTimeout(() => {
       try {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+        localStorage.setItem(getUserStorageKey(currentUser.id), JSON.stringify(data));
         setIsSaved(true);
       } catch (e) {
         console.error('Failed to save to local storage:', e);
@@ -115,7 +169,7 @@ export default function App() {
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [data]);
+  }, [data, currentUser?.id]);
 
   const handleLoginSuccess = (user: User) => {
     setCurrentUser(user);
@@ -137,11 +191,16 @@ export default function App() {
     }
   };
 
-  // Save current transaction to Firestore Database
+  // Save current transaction to Firestore Database with user isolation
   const handleSaveToDatabase = async () => {
+    if (!currentUser) return;
     setIsSavingDb(true);
     try {
-      const docId = await saveTransactionToDb(data, activeTransactionId || undefined);
+      const docId = await saveTransactionToDb(
+        data,
+        currentUser.id,
+        activeTransactionId || undefined
+      );
       setActiveTransactionId(docId);
       setSaveToast({
         show: true,
@@ -164,7 +223,7 @@ export default function App() {
 
   // Create new blank transaction
   const handleNewTransaction = () => {
-    setData(getBlankDocumentData());
+    setData(getBlankDocumentData(currentUser));
     setActiveTransactionId(null);
     setCurrentView('edit');
   };
@@ -197,6 +256,8 @@ export default function App() {
       const freshNums = generateUniqueDocNumbers();
       setData({
         ...sampleTextileData,
+        sales: currentUser?.name || sampleTextileData.sales,
+        companyName: currentUser?.companyName || sampleTextileData.companyName,
         noSuratJalan: freshNums.noSuratJalan,
         noBuktiSO: freshNums.noBuktiSO,
         noInvoice: freshNums.noInvoice,
@@ -213,12 +274,14 @@ export default function App() {
         'Apakah Anda yakin ingin mengosongkan seluruh isi form? Data customer dan item kain akan dihapus.'
       )
     ) {
-      try {
-        localStorage.removeItem(LOCAL_STORAGE_KEY);
-      } catch (e) {
-        console.error('Failed to clear local storage:', e);
+      if (currentUser) {
+        try {
+          localStorage.removeItem(getUserStorageKey(currentUser.id));
+        } catch (e) {
+          console.error('Failed to clear local storage:', e);
+        }
       }
-      setData(getBlankDocumentData());
+      setData(getBlankDocumentData(currentUser));
       setActiveTransactionId(null);
     }
   };
@@ -356,6 +419,14 @@ export default function App() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
+                  onClick={() => setShowVerificationModal(true)}
+                  className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-bold rounded-lg text-xs transition flex items-center gap-1.5 cursor-pointer"
+                  title="Tampilkan Status & Link QR Code Verifikasi Keaslian Dokumen"
+                >
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" /> Verifikasi QR Code
+                </button>
+                <button
+                  type="button"
                   onClick={() => setCurrentView('edit')}
                   className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded-lg text-xs transition flex items-center gap-1 cursor-pointer"
                 >
@@ -380,7 +451,7 @@ export default function App() {
 
             {/* Document Render */}
             <div className="overflow-x-auto pb-8">
-              <SuratJalanDoc data={data} />
+              <SuratJalanDoc data={data} onOpenVerification={() => setShowVerificationModal(true)} />
             </div>
           </div>
         )}
@@ -398,6 +469,14 @@ export default function App() {
               </div>
 
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowVerificationModal(true)}
+                  className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-bold rounded-lg text-xs transition flex items-center gap-1.5 cursor-pointer"
+                  title="Tampilkan Status & Link QR Code Verifikasi Keaslian Dokumen"
+                >
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" /> Verifikasi QR Code
+                </button>
                 <button
                   type="button"
                   onClick={() => setCurrentView('edit')}
@@ -424,7 +503,7 @@ export default function App() {
 
             {/* Document Render */}
             <div className="overflow-x-auto pb-8">
-              <InvoiceDoc data={data} />
+              <InvoiceDoc data={data} onOpenVerification={() => setShowVerificationModal(true)} />
             </div>
           </div>
         )}
@@ -478,7 +557,7 @@ export default function App() {
               <div className="no-print font-bold text-slate-700 text-xs mb-2 uppercase tracking-wide flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-blue-600"></span> Dokumen 1: SURAT JALAN (PACKING LIST)
               </div>
-              <SuratJalanDoc data={data} />
+              <SuratJalanDoc data={data} onOpenVerification={() => setShowVerificationModal(true)} />
             </div>
 
             <div className="no-print my-6 border-b-2 border-dashed border-slate-300"></div>
@@ -488,11 +567,25 @@ export default function App() {
               <div className="no-print font-bold text-slate-700 text-xs mb-2 uppercase tracking-wide flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-600"></span> Dokumen 2: INVOICE (FAKTUR PENJUALAN)
               </div>
-              <InvoiceDoc data={data} />
+              <InvoiceDoc data={data} onOpenVerification={() => setShowVerificationModal(true)} />
             </div>
           </div>
         )}
       </main>
+
+      {/* Interactive Document Authenticity Verification Modal */}
+      {showVerificationModal && (
+        <VerificationModal
+          data={data}
+          matchedTransaction={savedTransactions.find(
+            (t) =>
+              t.data.noInvoice === data.noInvoice ||
+              t.data.noSuratJalan === data.noSuratJalan
+          )}
+          onClose={() => setShowVerificationModal(false)}
+          onPrint={handlePrint}
+        />
+      )}
     </div>
   </div>
   );

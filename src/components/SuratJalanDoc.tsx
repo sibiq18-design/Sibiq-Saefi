@@ -5,9 +5,10 @@ import { formatDateIndonesian, formatYard } from '../utils/formatters';
 
 interface SuratJalanDocProps {
   data: DocumentData;
+  onOpenVerification?: () => void;
 }
 
-export const SuratJalanDoc: React.FC<SuratJalanDocProps> = ({ data }) => {
+export const SuratJalanDoc: React.FC<SuratJalanDocProps> = ({ data, onOpenVerification }) => {
   // Calculate aggregate totals
   const totalRollsCount = data.items.reduce((sum, item) => sum + item.rolls.length, 0);
   const totalYardsCount = data.items.reduce(
@@ -15,16 +16,13 @@ export const SuratJalanDoc: React.FC<SuratJalanDocProps> = ({ data }) => {
     0
   );
 
-  // QR Code payload string for document verification
-  const qrPayload = JSON.stringify({
-    type: 'SURAT_JALAN',
-    noSJ: data.noSuratJalan,
-    so: data.noBuktiSO,
-    customer: data.customerName,
-    rolls: totalRollsCount,
-    yards: totalYardsCount.toFixed(2),
-    date: data.tanggalSuratJalan
-  });
+  // Validasi URL QR Code unik
+  const validationUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}${window.location.pathname}?verify=${encodeURIComponent(
+          data.noSuratJalan || data.noInvoice
+        )}`
+      : `https://grosir-tekstil.app/verify?sj=${encodeURIComponent(data.noSuratJalan)}`;
 
   return (
     <div className="a4-document text-slate-900 bg-white flex flex-col justify-between select-text">
@@ -178,9 +176,15 @@ export const SuratJalanDoc: React.FC<SuratJalanDocProps> = ({ data }) => {
       <div className="pt-2">
         <div className="grid grid-cols-12 gap-3 items-end">
           {/* QR Code Section */}
-          <div className="col-span-3 flex flex-col items-center justify-center p-2 border border-slate-300 rounded bg-white">
-            <QRCodeSVG value={qrPayload} size={84} level="M" />
-            <span className="text-[9px] font-mono text-slate-500 mt-1 text-center font-semibold">
+          <div
+            onClick={onOpenVerification}
+            className={`col-span-3 flex flex-col items-center justify-center p-2 border border-slate-300 rounded bg-white ${
+              onOpenVerification ? 'cursor-pointer hover:border-emerald-500 hover:shadow-sm transition' : ''
+            }`}
+            title="Klik untuk membuka status verifikasi keaslian dokumen"
+          >
+            <QRCodeSVG value={validationUrl} size={84} level="M" />
+            <span className="text-[9px] font-mono text-slate-600 mt-1 text-center font-bold">
               VERIFIKASI SJ
             </span>
           </div>

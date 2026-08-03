@@ -25,6 +25,7 @@ export const db = firebaseConfig.firestoreDatabaseId
 
 export interface SavedTransaction {
   id: string;
+  userId?: string;
   data: DocumentData;
   createdAt: string;
   updatedAt: string;
@@ -36,10 +37,11 @@ export interface SavedTransaction {
 const COLLECTION_NAME = 'transactions';
 
 /**
- * Save or Update a transaction in Firestore
+ * Save or Update a transaction in Firestore with userId tag
  */
 export async function saveTransactionToDb(
   docData: DocumentData,
+  userId: string,
   existingId?: string
 ): Promise<string> {
   const transactionsRef = collection(db, COLLECTION_NAME);
@@ -59,6 +61,7 @@ export async function saveTransactionToDb(
 
   const payload = {
     docData,
+    userId: userId || 'anonymous',
     totalRolls,
     totalYards,
     grandTotal,
@@ -87,9 +90,10 @@ export async function deleteTransactionFromDb(id: string): Promise<void> {
 }
 
 /**
- * Subscribe to real-time updates of all transactions from Firestore
+ * Subscribe to real-time updates of user-specific transactions from Firestore
  */
 export function subscribeTransactions(
+  userId: string,
   onUpdate: (transactions: SavedTransaction[]) => void,
   onError?: (err: Error) => void
 ) {
@@ -99,18 +103,23 @@ export function subscribeTransactions(
   return onSnapshot(
     q,
     (snapshot) => {
-      const list: SavedTransaction[] = snapshot.docs.map((d) => {
-        const data = d.data();
-        return {
-          id: d.id,
-          data: data.docData as DocumentData,
-          createdAt: data.createdAt || new Date().toISOString(),
-          updatedAt: data.updatedAt || new Date().toISOString(),
-          totalRolls: data.totalRolls || 0,
-          totalYards: data.totalYards || 0,
-          grandTotal: data.grandTotal || 0,
-        };
-      });
+      const list: SavedTransaction[] = snapshot.docs
+        .map((d) => {
+          const data = d.data();
+          return {
+            id: d.id,
+            userId: data.userId || '',
+            data: data.docData as DocumentData,
+            createdAt: data.createdAt || new Date().toISOString(),
+            updatedAt: data.updatedAt || new Date().toISOString(),
+            totalRolls: data.totalRolls || 0,
+            totalYards: data.totalYards || 0,
+            grandTotal: data.grandTotal || 0,
+          };
+        })
+        // Isolate transactions per user account
+        .filter((t) => !userId || !t.userId || t.userId === userId);
+
       onUpdate(list);
     },
     (error) => {

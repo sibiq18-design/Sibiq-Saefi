@@ -6,9 +6,10 @@ import { terbilangRupiah } from '../utils/terbilang';
 
 interface InvoiceDocProps {
   data: DocumentData;
+  onOpenVerification?: () => void;
 }
 
-export const InvoiceDoc: React.FC<InvoiceDocProps> = ({ data }) => {
+export const InvoiceDoc: React.FC<InvoiceDocProps> = ({ data, onOpenVerification }) => {
   // Calculate Totals
   const totalRollsCount = data.items.reduce((sum, item) => sum + item.rolls.length, 0);
   const totalYardsCount = data.items.reduce(
@@ -31,17 +32,13 @@ export const InvoiceDoc: React.FC<InvoiceDocProps> = ({ data }) => {
   const grandTotal = subtotalPrice - totalDiscountAmount;
   const terbilangText = terbilangRupiah(grandTotal);
 
-  // QR Code payload
-  const qrPayload = JSON.stringify({
-    type: 'INVOICE',
-    noInv: data.noInvoice,
-    noSJ: data.noSuratJalan,
-    customer: data.customerName,
-    rolls: totalRollsCount,
-    yards: totalYardsCount.toFixed(2),
-    grandTotal: grandTotal,
-    date: data.tanggalInvoice
-  });
+  // Validasi URL QR Code unik ke URL publik web
+  const validationUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}${window.location.pathname}?verify=${encodeURIComponent(
+          data.noInvoice || data.noSuratJalan
+        )}`
+      : `https://grosir-tekstil.app/verify?inv=${encodeURIComponent(data.noInvoice)}`;
 
   return (
     <div className="a4-document text-slate-900 bg-white flex flex-col justify-between select-text">
@@ -264,9 +261,15 @@ export const InvoiceDoc: React.FC<InvoiceDocProps> = ({ data }) => {
           </div>
 
           {/* Right QR Code Box */}
-          <div className="col-span-4 flex flex-col items-center justify-center p-2 border border-slate-300 rounded bg-white h-28">
-            <QRCodeSVG value={qrPayload} size={76} level="M" />
-            <span className="text-[9px] font-mono text-slate-500 mt-1 text-center font-semibold">
+          <div
+            onClick={onOpenVerification}
+            className={`col-span-4 flex flex-col items-center justify-center p-2 border border-slate-300 rounded bg-white h-28 ${
+              onOpenVerification ? 'cursor-pointer hover:border-emerald-500 hover:shadow-sm transition' : ''
+            }`}
+            title="Klik untuk membuka status verifikasi keaslian dokumen"
+          >
+            <QRCodeSVG value={validationUrl} size={76} level="M" />
+            <span className="text-[9px] font-mono text-slate-600 mt-1 text-center font-bold flex items-center gap-1">
               VERIFIKASI INVOICE
             </span>
           </div>

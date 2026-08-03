@@ -3,7 +3,9 @@ export interface User {
   username: string;
   name: string;
   email: string;
+  companyName?: string;
   role: 'Admin' | 'Sales' | 'Staff Gudang';
+  createdAt?: string;
 }
 
 export interface TextileItem {
