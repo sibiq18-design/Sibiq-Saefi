@@ -1,5 +1,4 @@
 import React from 'react';
-import { QRCodeSVG } from 'qrcode.react';
 import { DocumentData } from '../types';
 import { formatDateIndonesian, formatYard } from '../utils/formatters';
 
@@ -8,21 +7,13 @@ interface SuratJalanDocProps {
   onOpenVerification?: () => void;
 }
 
-export const SuratJalanDoc: React.FC<SuratJalanDocProps> = ({ data, onOpenVerification }) => {
+export const SuratJalanDoc: React.FC<SuratJalanDocProps> = ({ data }) => {
   // Calculate aggregate totals
   const totalRollsCount = data.items.reduce((sum, item) => sum + item.rolls.length, 0);
   const totalYardsCount = data.items.reduce(
     (sum, item) => sum + item.rolls.reduce((rSum, yard) => rSum + yard, 0),
     0
   );
-
-  // Validasi URL QR Code unik
-  const validationUrl =
-    typeof window !== 'undefined'
-      ? `${window.location.origin}${window.location.pathname}?verify=${encodeURIComponent(
-          data.noSuratJalan || data.noInvoice
-        )}`
-      : `https://grosir-tekstil.app/verify?sj=${encodeURIComponent(data.noSuratJalan)}`;
 
   return (
     <div className="a4-document text-slate-900 bg-white flex flex-col justify-between select-text">
@@ -172,42 +163,25 @@ export const SuratJalanDoc: React.FC<SuratJalanDocProps> = ({ data, onOpenVerifi
         </div>
       </div>
 
-      {/* Footer Signatures and QR Code Section */}
+      {/* Footer Signatures Section */}
       <div className="pt-2">
-        <div className="grid grid-cols-12 gap-3 items-end">
-          {/* QR Code Section */}
-          <div
-            onClick={onOpenVerification}
-            className={`col-span-3 flex flex-col items-center justify-center p-2 border border-slate-300 rounded bg-white ${
-              onOpenVerification ? 'cursor-pointer hover:border-emerald-500 hover:shadow-sm transition' : ''
-            }`}
-            title="Klik untuk membuka status verifikasi keaslian dokumen"
-          >
-            <QRCodeSVG value={validationUrl} size={84} level="M" />
-            <span className="text-[9px] font-mono text-slate-600 mt-1 text-center font-bold">
-              VERIFIKASI SJ
-            </span>
+        <div className="grid grid-cols-3 gap-3 text-center text-xs">
+          {/* Box 1 */}
+          <div className="border border-slate-900 p-2 rounded-sm flex flex-col justify-between h-28">
+            <p className="font-bold text-slate-800">Yang menerima,</p>
+            <p className="text-[11px] text-slate-500">( ttd & nama jelas )</p>
           </div>
 
-          {/* 3 Signatures Columns */}
-          <div className="col-span-9 grid grid-cols-3 gap-2 text-center text-xs">
-            {/* Box 1 */}
-            <div className="border border-slate-900 p-2 rounded-sm flex flex-col justify-between h-28">
-              <p className="font-bold text-slate-800">Yang menerima,</p>
-              <p className="text-[11px] text-slate-500">( ttd & nama jelas )</p>
-            </div>
+          {/* Box 2 */}
+          <div className="border border-slate-900 p-2 rounded-sm flex flex-col justify-between h-28">
+            <p className="font-bold text-slate-800">Mengetahui,</p>
+            <p className="text-[11px] text-slate-500">( ttd & nama jelas )</p>
+          </div>
 
-            {/* Box 2 */}
-            <div className="border border-slate-900 p-2 rounded-sm flex flex-col justify-between h-28">
-              <p className="font-bold text-slate-800">Mengetahui,</p>
-              <p className="text-[11px] text-slate-500">( ttd & nama jelas )</p>
-            </div>
-
-            {/* Box 3 */}
-            <div className="border border-slate-900 p-2 rounded-sm flex flex-col justify-between h-28">
-              <p className="font-bold text-slate-800">Hormat kami,</p>
-              <p className="text-[11px] text-slate-500">( ttd & nama jelas )</p>
-            </div>
+          {/* Box 3 */}
+          <div className="border border-slate-900 p-2 rounded-sm flex flex-col justify-between h-28">
+            <p className="font-bold text-slate-800">Hormat kami,</p>
+            <p className="text-[11px] text-slate-500">( ttd & nama jelas )</p>
           </div>
         </div>
       </div>

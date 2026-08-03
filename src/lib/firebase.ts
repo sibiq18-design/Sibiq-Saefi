@@ -82,6 +82,42 @@ export async function saveTransactionToDb(
 }
 
 /**
+ * Query Firestore to check if a transaction exists by Invoice / Surat Jalan code or Document ID
+ */
+export async function verifyPublicTransaction(code: string): Promise<SavedTransaction | null> {
+  if (!code || !code.trim()) return null;
+  const cleanCode = code.trim().toLowerCase();
+  try {
+    const transactionsRef = collection(db, COLLECTION_NAME);
+    const snapshot = await getDocs(transactionsRef);
+    for (const docSnap of snapshot.docs) {
+      const dData = docSnap.data();
+      const docData = dData.docData as DocumentData;
+      if (!docData) continue;
+      const invMatch = docData.noInvoice && docData.noInvoice.trim().toLowerCase() === cleanCode;
+      const sjMatch = docData.noSuratJalan && docData.noSuratJalan.trim().toLowerCase() === cleanCode;
+      const idMatch = docSnap.id.toLowerCase() === cleanCode;
+
+      if (invMatch || sjMatch || idMatch) {
+        return {
+          id: docSnap.id,
+          userId: dData.userId || '',
+          data: docData,
+          createdAt: dData.createdAt || new Date().toISOString(),
+          updatedAt: dData.updatedAt || new Date().toISOString(),
+          totalRolls: dData.totalRolls || 0,
+          totalYards: dData.totalYards || 0,
+          grandTotal: dData.grandTotal || 0,
+        };
+      }
+    }
+  } catch (err) {
+    console.error('Error verifying public transaction:', err);
+  }
+  return null;
+}
+
+/**
  * Delete a transaction document from Firestore
  */
 export async function deleteTransactionFromDb(id: string): Promise<void> {

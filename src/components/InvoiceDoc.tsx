@@ -1,5 +1,4 @@
 import React from 'react';
-import { QRCodeSVG } from 'qrcode.react';
 import { DocumentData } from '../types';
 import { formatDateIndonesian, formatRupiah, formatYard } from '../utils/formatters';
 import { terbilangRupiah } from '../utils/terbilang';
@@ -9,7 +8,7 @@ interface InvoiceDocProps {
   onOpenVerification?: () => void;
 }
 
-export const InvoiceDoc: React.FC<InvoiceDocProps> = ({ data, onOpenVerification }) => {
+export const InvoiceDoc: React.FC<InvoiceDocProps> = ({ data }) => {
   // Calculate Totals
   const totalRollsCount = data.items.reduce((sum, item) => sum + item.rolls.length, 0);
   const totalYardsCount = data.items.reduce(
@@ -31,14 +30,6 @@ export const InvoiceDoc: React.FC<InvoiceDocProps> = ({ data, onOpenVerification
 
   const grandTotal = subtotalPrice - totalDiscountAmount;
   const terbilangText = terbilangRupiah(grandTotal);
-
-  // Validasi URL QR Code unik ke URL publik web
-  const validationUrl =
-    typeof window !== 'undefined'
-      ? `${window.location.origin}${window.location.pathname}?verify=${encodeURIComponent(
-          data.noInvoice || data.noSuratJalan
-        )}`
-      : `https://grosir-tekstil.app/verify?inv=${encodeURIComponent(data.noInvoice)}`;
 
   return (
     <div className="a4-document text-slate-900 bg-white flex flex-col justify-between select-text">
@@ -245,33 +236,16 @@ export const InvoiceDoc: React.FC<InvoiceDocProps> = ({ data, onOpenVerification
         </div>
       </div>
 
-      {/* Footer Signatures and Verification */}
+      {/* Footer Signatures Section */}
       <div className="pt-2">
-        <div className="grid grid-cols-12 gap-3 items-end">
-          {/* Left Signature / Approval Box */}
-          <div className="col-span-8 grid grid-cols-2 gap-3 text-center text-xs">
-            <div className="border border-slate-900 p-2 rounded-sm flex flex-col justify-between h-28">
-              <p className="font-bold text-slate-800">Note / Catatan,</p>
-              <p className="text-[10px] text-slate-500">( Pembayaran via transfer Bank )</p>
-            </div>
-            <div className="border border-slate-900 p-2 rounded-sm flex flex-col justify-between h-28">
-              <p className="font-bold text-slate-800">Disetujui Oleh,</p>
-              <p className="text-[11px] text-slate-500">( ttd & stempel toko )</p>
-            </div>
+        <div className="grid grid-cols-2 gap-3 text-center text-xs">
+          <div className="border border-slate-900 p-2 rounded-sm flex flex-col justify-between h-28">
+            <p className="font-bold text-slate-800">Note / Catatan,</p>
+            <p className="text-[10px] text-slate-500">( Pembayaran via transfer Bank )</p>
           </div>
-
-          {/* Right QR Code Box */}
-          <div
-            onClick={onOpenVerification}
-            className={`col-span-4 flex flex-col items-center justify-center p-2 border border-slate-300 rounded bg-white h-28 ${
-              onOpenVerification ? 'cursor-pointer hover:border-emerald-500 hover:shadow-sm transition' : ''
-            }`}
-            title="Klik untuk membuka status verifikasi keaslian dokumen"
-          >
-            <QRCodeSVG value={validationUrl} size={76} level="M" />
-            <span className="text-[9px] font-mono text-slate-600 mt-1 text-center font-bold flex items-center gap-1">
-              VERIFIKASI INVOICE
-            </span>
+          <div className="border border-slate-900 p-2 rounded-sm flex flex-col justify-between h-28">
+            <p className="font-bold text-slate-800">Disetujui Oleh / Hormat Kami,</p>
+            <p className="text-[11px] text-slate-500">( ttd & stempel toko )</p>
           </div>
         </div>
       </div>

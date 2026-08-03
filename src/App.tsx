@@ -10,6 +10,7 @@ import { TransactionHistory } from './components/TransactionHistory';
 import { Dashboard } from './components/Dashboard';
 import { Sidebar } from './components/Sidebar';
 import { VerificationModal } from './components/VerificationModal';
+import { PublicVerificationPage } from './components/PublicVerificationPage';
 import {
   subscribeTransactions,
   saveTransactionToDb,
@@ -85,6 +86,13 @@ export default function App() {
 
   const [currentView, setCurrentView] = useState<ViewMode>('dashboard');
   const [isSaved, setIsSaved] = useState(true);
+
+  // Standalone Public QR Verification Code State
+  const [publicVerifyCode, setPublicVerifyCode] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const params = new URLSearchParams(window.location.search);
+    return params.get('verify') || params.get('inv') || params.get('sj') || null;
+  });
 
   // Verification Modal State
   const [showVerificationModal, setShowVerificationModal] = useState(false);
@@ -350,6 +358,22 @@ export default function App() {
     const gross = itemYards * item.hargaSatuan;
     return sum + gross * (1 - item.diskonPersen / 100);
   }, 0);
+
+  // Public QR Code Verification View for Customers (Does not grant access to app)
+  if (publicVerifyCode) {
+    return (
+      <PublicVerificationPage
+        initialCode={publicVerifyCode}
+        onGoToApp={() => {
+          if (typeof window !== 'undefined') {
+            const cleanUrl = window.location.pathname;
+            window.history.replaceState({}, '', cleanUrl);
+          }
+          setPublicVerifyCode(null);
+        }}
+      />
+    );
+  }
 
   // Render Login screen if not authenticated
   if (!currentUser) {
