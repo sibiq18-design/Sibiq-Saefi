@@ -101,11 +101,20 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
     return DEFAULT_ACCOUNTS;
   };
 
-  // Handle Login Submission
+  // Failed login attempt tracker for rate limiting
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [isLocked, setIsLocked] = useState(false);
+
+  // Handle Login Submission with Strict Authentication Gate
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
+
+    if (isLocked) {
+      setErrorMsg('Akses Dikunci Sementara: Terlalu banyak percobaan gagal. Silakan tunggu 30 detik.');
+      return;
+    }
 
     const cleanUsername = loginUsername.trim().toLowerCase();
     if (!cleanUsername) {
@@ -121,55 +130,78 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
 
     setTimeout(() => {
       const users = getRegisteredUsers();
-      // Match registered user by username or email
+      // Match registered user strictly by username or email
       const matched = users.find(
         (u) =>
           u.username.toLowerCase() === cleanUsername ||
           u.email.toLowerCase() === cleanUsername
       );
 
-      if (matched) {
-        if (matched.passwordHash && matched.passwordHash !== loginPassword) {
-          setIsLoading(false);
-          setErrorMsg('Kata sandi yang Anda masukkan salah.');
-          return;
+      if (!matched) {
+        setIsLoading(false);
+        const newFailedCount = failedAttempts + 1;
+        setFailedAttempts(newFailedCount);
+
+        if (newFailedCount >= 5) {
+          setIsLocked(true);
+          setTimeout(() => {
+            setIsLocked(false);
+            setFailedAttempts(0);
+          }, 30000);
+          setErrorMsg('Akses Ditolak: 5x percobaan gagal. Akun/Akses dikunci sementara selama 30 detik.');
+        } else {
+          setErrorMsg('Akses Ditolak: Username/Email tidak terdaftar dalam database sistem. Silakan mendaftar akun resmi.');
         }
-
-        const authenticatedUser: User = {
-          id: matched.id,
-          username: matched.username,
-          name: matched.name,
-          email: matched.email,
-          companyName: matched.companyName,
-          role: matched.role,
-          createdAt: matched.createdAt,
-        };
-
-        onLoginSuccess(authenticatedUser);
-      } else {
-        // If account not found in registry, create dynamic account on the fly for seamless access
-        const dynamicRole = cleanUsername.includes('admin')
-          ? 'Admin'
-          : cleanUsername.includes('gudang')
-          ? 'Staff Gudang'
-          : 'Sales';
-
-        const newUser: User = {
-          id: `usr-${Date.now()}`,
-          username: cleanUsername,
-          name: cleanUsername.charAt(0).toUpperCase() + cleanUsername.slice(1),
-          email: cleanUsername.includes('@') ? cleanUsername : `${cleanUsername}@tekstil.id`,
-          companyName: 'Grosir Tekstil Indonesia',
-          role: dynamicRole,
-          createdAt: new Date().toISOString(),
-        };
-
-        // Save new user account to registry
-        const updatedList = [...users, { ...newUser, passwordHash: loginPassword }];
-        localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(updatedList));
-
-        onLoginSuccess(newUser);
+        return;
       }
+
+      // Validate Password
+      if (matched.passwordHash && matched.passwordHash !== loginPassword) {
+        setIsLoading(false);
+        const newFailedCount = failedAttempts + 1;
+        setFailedAttempts(newFailedCount);
+
+        if (newFailedCount >= 5) {
+          setIsLocked(true);
+          setTimeout(() => {
+            setIsLocked(false);
+            setFailedAttempts(0);
+          }, 30000);
+          setErrorMsg('Akses Dikunci: Terlalu banyak kesalahan kata sandi. Tunggu 30 detik.');
+        } else {
+          setErrorMsg(`Kata sandi yang Anda masukkan salah. (Percobaan ${newFailedCount}/5)`);
+        }
+        return;
+      }
+
+      // Check Account Authorization & Status
+      if (matched.status === 'blocked') {
+        setIsLoading(false);
+        setErrorMsg('Akses Ditolak: Akun Anda telah DIBLOKIR oleh Administrator Keamanan.');
+        return;
+      }
+
+      if (matched.status === 'pending') {
+        setIsLoading(false);
+        setErrorMsg('Persetujuan Tertunda: Akun Anda masih menunggu verifikasi dari Administrator sebelum dapat masuk.');
+        return;
+      }
+
+      // Reset failed attempts counter on success
+      setFailedAttempts(0);
+
+      const authenticatedUser: User = {
+        id: matched.id,
+        username: matched.username,
+        name: matched.name,
+        email: matched.email,
+        companyName: matched.companyName,
+        role: matched.role,
+        status: matched.status || 'active',
+        createdAt: matched.createdAt,
+      };
+
+      onLoginSuccess(authenticatedUser);
     }, 500);
   };
 
@@ -191,8 +223,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
       setErrorMsg('Silakan masukkan alamat Email yang valid.');
       return;
     }
-    if (!regPassword || regPassword.length < 4) {
-      setErrorMsg('Kata sandi minimal 4 karakter.');
+    if (!regPassword || regPassword.length < 6) {
+      setErrorMsg('Keamanan Kata Sandi: Kata sandi minimal 6 karakter.');
       return;
     }
     if (regPassword !== regConfirmPassword) {
@@ -213,6 +245,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
       return;
     }
 
+    // Security Hardening: Block self-assigned Admin role via public registration
+    const safeRole: 'Admin' | 'Sales' | 'Staff Gudang' =
+      regRole === 'Admin' ? 'Sales' : regRole;
+
     setIsLoading(true);
 
     setTimeout(() => {
@@ -222,7 +258,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
         name: regName.trim(),
         email: cleanEmail,
         companyName: regCompany.trim() || 'Toko Kain Tekstil Grosir',
-        role: regRole,
+        role: safeRole,
+        status: 'active',
         passwordHash: regPassword,
         createdAt: new Date().toISOString(),
       };

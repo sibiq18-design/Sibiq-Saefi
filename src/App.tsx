@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ViewMode, DocumentData, User } from './types';
+import { ViewMode, DocumentData, User, TextileItem } from './types';
 import { sampleTextileData } from './data/sampleData';
 import { Navbar } from './components/Navbar';
 import { FormInput } from './components/FormInput';
@@ -109,6 +109,14 @@ export default function App() {
       setCurrentView('invoice');
     }
   }, []);
+
+  // Security Session Check: Auto-logout blocked or pending sessions
+  useEffect(() => {
+    if (currentUser && (currentUser.status === 'blocked' || currentUser.status === 'pending')) {
+      localStorage.removeItem(USER_STORAGE_KEY);
+      setCurrentUser(null);
+    }
+  }, [currentUser]);
 
   // Update active user data on user login switch
   useEffect(() => {

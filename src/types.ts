@@ -5,6 +5,7 @@ export interface User {
   email: string;
   companyName?: string;
   role: 'Admin' | 'Sales' | 'Staff Gudang';
+  status?: 'active' | 'pending' | 'blocked';
   createdAt?: string;
 }
 

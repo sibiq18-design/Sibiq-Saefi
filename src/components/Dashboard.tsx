@@ -10,9 +10,6 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
-  PieChart,
-  Pie,
-  Cell,
   Legend
 } from 'recharts';
 import {
@@ -44,8 +41,6 @@ interface DashboardProps {
   onLoadSample: () => void;
 }
 
-const COLORS = ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#64748b'];
-
 export const Dashboard: React.FC<DashboardProps> = ({
   transactions,
   isLoading,
@@ -67,9 +62,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
     { name: string; company: string; count: number; rolls: number; yards: number; totalRp: number }
   > = {};
 
-  // Fabric / Color breakdown
-  const fabricStatsMap: Record<string, { label: string; rolls: number; yards: number; totalRp: number }> = {};
-
   transactions.forEach((t) => {
     const cName = t.data.customerName?.trim() || 'Pelanggan Umum';
     if (!customerStatsMap[cName]) {
@@ -86,33 +78,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
     customerStatsMap[cName].rolls += t.totalRolls || 0;
     customerStatsMap[cName].yards += t.totalYards || 0;
     customerStatsMap[cName].totalRp += t.grandTotal || 0;
-
-    // Items breakdown
-    t.data.items?.forEach((item) => {
-      const label = item.namaBarang
-        ? `${item.namaBarang} (${item.namaWarna || item.kodeWarna || 'Uni'})`
-        : item.kode || 'Kain Tekstil';
-
-      const itemYard = item.rolls.reduce((sum, r) => sum + r, 0);
-      const itemRolls = item.rolls.length;
-      const itemVal = itemYard * item.hargaSatuan * (1 - item.diskonPersen / 100);
-
-      if (!fabricStatsMap[label]) {
-        fabricStatsMap[label] = { label, rolls: 0, yards: 0, totalRp: 0 };
-      }
-      fabricStatsMap[label].rolls += itemRolls;
-      fabricStatsMap[label].yards += itemYard;
-      fabricStatsMap[label].totalRp += itemVal;
-    });
   });
 
   const topCustomers = Object.values(customerStatsMap)
     .sort((a, b) => b.totalRp - a.totalRp)
     .slice(0, 5);
-
-  const topFabrics = Object.values(fabricStatsMap)
-    .sort((a, b) => b.yards - a.yards)
-    .slice(0, 6);
 
   // Chart Data: Top Customers Bar Chart
   const customerChartData = topCustomers.map((c) => ({
@@ -120,13 +90,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
     fullName: c.name,
     'Omset (Rp)': Math.round(c.totalRp),
     'Total Yard': Math.round(c.yards),
-  }));
-
-  // Chart Data: Fabric Distribution Pie Chart
-  const fabricPieData = topFabrics.map((f) => ({
-    name: f.label.length > 20 ? f.label.substring(0, 18) + '..' : f.label,
-    fullName: f.label,
-    value: Math.round(f.yards),
   }));
 
   return (
@@ -268,99 +231,55 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* Analytics Visual Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Customer Volume Bar Chart (2 Cols) */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div>
-              <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
-                <Users className="w-4 h-4 text-blue-600" /> Penjualan Per Pelanggan Utam
-              </h3>
-              <p className="text-xs text-slate-500">Perbandingan total nilai transaksi (Omset Rp) tiap pelanggan</p>
-            </div>
+      <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div>
+            <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+              <Users className="w-4 h-4 text-blue-600" /> Penjualan Per Pelanggan Utama
+            </h3>
+            <p className="text-xs text-slate-500">Perbandingan total nilai transaksi (Omset Rp) tiap pelanggan</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => onViewChange('history')}
+            className="text-xs font-bold text-blue-600 hover:underline cursor-pointer flex items-center gap-1"
+          >
+            Semua Pelanggan <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {customerChartData.length > 0 ? (
+          <div className="h-64 w-full pt-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={customerChartData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} />
+                <YAxis
+                  tick={{ fontSize: 10, fill: '#64748b' }}
+                  tickFormatter={(val) => `${(val / 1000000).toFixed(1)}M`}
+                />
+                <Tooltip
+                  formatter={(val: any) => [formatRupiah(Number(val)), 'Total Penjualan']}
+                  labelFormatter={(label) => `Pelanggan: ${label}`}
+                  contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', color: '#fff', fontSize: '12px' }}
+                />
+                <Bar dataKey="Omset (Rp)" fill="#2563eb" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="h-64 flex flex-col items-center justify-center text-center p-6 text-slate-400 space-y-2">
+            <Database className="w-8 h-8 text-slate-300" />
+            <p className="text-xs font-semibold">Belum ada grafik transaksi tersimpan</p>
             <button
               type="button"
-              onClick={() => onViewChange('history')}
-              className="text-xs font-bold text-blue-600 hover:underline cursor-pointer flex items-center gap-1"
+              onClick={onLoadSample}
+              className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-100 transition cursor-pointer"
             >
-              Semua Pelanggan <ChevronRight className="w-3.5 h-3.5" />
+              Muat Data Contoh Rayon Twill
             </button>
           </div>
-
-          {customerChartData.length > 0 ? (
-            <div className="h-64 w-full pt-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={customerChartData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} />
-                  <YAxis
-                    tick={{ fontSize: 10, fill: '#64748b' }}
-                    tickFormatter={(val) => `${(val / 1000000).toFixed(1)}M`}
-                  />
-                  <Tooltip
-                    formatter={(val: any) => [formatRupiah(Number(val)), 'Total Penjualan']}
-                    labelFormatter={(label) => `Pelanggan: ${label}`}
-                    contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', color: '#fff', fontSize: '12px' }}
-                  />
-                  <Bar dataKey="Omset (Rp)" fill="#2563eb" radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="h-64 flex flex-col items-center justify-center text-center p-6 text-slate-400 space-y-2">
-              <Database className="w-8 h-8 text-slate-300" />
-              <p className="text-xs font-semibold">Belum ada grafik transaksi tersimpan</p>
-              <button
-                type="button"
-                onClick={onLoadSample}
-                className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-100 transition cursor-pointer"
-              >
-                Muat Data Contoh Rayon Twill
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Fabric Type Breakdown Pie Chart (1 Col) */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
-          <div className="border-b border-slate-100 pb-3">
-            <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
-              <Layers className="w-4 h-4 text-emerald-600" /> Distribusi Kain Terlaris
-            </h3>
-            <p className="text-xs text-slate-500">Persentase yardage berdasarkan variasi kain & warna</p>
-          </div>
-
-          {fabricPieData.length > 0 ? (
-            <div className="h-64 w-full flex flex-col items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={fabricPieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={85}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {fabricPieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(val: any) => [`${formatYard(Number(val))}`, 'Volume Yardage']}
-                    contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', color: '#fff', fontSize: '12px' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="h-64 flex flex-col items-center justify-center text-center p-6 text-slate-400 space-y-2">
-              <Layers className="w-8 h-8 text-slate-300" />
-              <p className="text-xs font-semibold">Belum ada data variasi kain</p>
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
       {/* Top Customer Summary & Recent Document Activity */}

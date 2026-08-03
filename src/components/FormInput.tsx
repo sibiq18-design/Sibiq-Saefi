@@ -152,7 +152,7 @@ export const FormInput: React.FC<FormInputProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2 w-full md:w-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
           <button
             type="button"
             onClick={onLoadSample}
