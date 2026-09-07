@@ -8,24 +8,60 @@
 
 /* Custom print styling for A4 Textile Invoices and Packing Lists */
 @media print {
-  /* Hide interactive app UI header, tabs, buttons, forms, toolbars */
+  /* Hide interactive app UI header, tabs, buttons, forms, toolbars, sidebars */
   .no-print,
   nav,
   header,
+  aside,
   .no-print-area,
   .app-header,
-  .app-tabs {
+  .app-tabs,
+  [role="dialog"] {
     display: none !important;
   }
 
-  body {
+  html, body {
     background: #ffffff !important;
     color: #000000 !important;
-    font-size: 10.5pt;
+    font-size: 10pt;
     padding: 0 !important;
     margin: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+  }
+
+  /* Remove all scrolling/flex constraints from parent containers so browser can break pages */
+  #root,
+  .min-h-screen,
+  .flex-1,
+  main,
+  .print-container,
+  .overflow-y-auto,
+  .overflow-x-auto,
+  .max-w-5xl {
+    display: block !important;
+    position: static !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    float: none !important;
+  }
+
+  /* Reset Tailwind spacing container in print */
+  .space-y-8 > :not([hidden]) ~ :not([hidden]),
+  .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
   }
 
   @page {
@@ -33,26 +69,52 @@
     margin: 8mm 10mm;
   }
 
-  .print-container {
-    padding: 0 !important;
-    margin: 0 !important;
-    background: transparent !important;
-  }
-
+  /* Individual A4 Document Page Styling */
   .a4-document {
     width: 100% !important;
-    min-height: auto !important;
+    max-width: 100% !important;
+    min-height: 260mm !important;
+    height: auto !important;
+    box-sizing: border-box !important;
     padding: 0 !important;
-    margin: 0 0 15mm 0 !important;
+    margin: 0 !important;
     box-shadow: none !important;
     border: none !important;
-    page-break-after: always;
-    break-after: page;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
-  .a4-document:last-child {
-    page-break-after: avoid;
-    break-after: avoid;
+  /* Force page break between Surat Jalan and Invoice */
+  .print-page-break {
+    display: block !important;
+    page-break-before: always !important;
+    break-before: page !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    clear: both !important;
+  }
+
+  .print-page-sj {
+    page-break-after: always !important;
+    break-after: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    display: block !important;
+    width: 100% !important;
+  }
+
+  .print-page-inv {
+    page-break-before: always !important;
+    break-before: page !important;
+    page-break-after: auto !important;
+    break-after: auto !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    display: block !important;
+    width: 100% !important;
   }
 
   /* Table borders for print */

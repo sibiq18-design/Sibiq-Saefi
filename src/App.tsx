@@ -18,7 +18,7 @@ import {
   SavedTransaction,
 } from './lib/firebase';
 import { generateUniqueDocNumbers } from './utils/formatters';
-import { Printer, Edit3, Sparkles, FileText, CheckCircle2, ArrowRight, Check, ShieldCheck, QrCode } from 'lucide-react';
+import { Printer, Edit3, Sparkles, FileText, CheckCircle2, ArrowRight, Check, ShieldCheck, QrCode, Layers } from 'lucide-react';
 
 const USER_STORAGE_KEY = 'textile_wholesale_erp_user_v1';
 const getUserStorageKey = (userId: string) => `textile_wholesale_erp_data_user_${userId}`;
@@ -314,11 +314,34 @@ export default function App() {
     return `${cleanCust} - ${cleanInv}`;
   };
 
-  // Handle print action
-  const handlePrint = () => {
+  // Handle print action with optional target view
+  const handlePrint = (targetView?: ViewMode) => {
     const prevTitle = document.title;
     const printTitle = getPdfDocumentTitle();
     document.title = printTitle;
+
+    if (targetView && targetView !== currentView) {
+      setCurrentView(targetView);
+      setTimeout(() => {
+        window.print();
+        setTimeout(() => {
+          document.title = prevTitle;
+        }, 1500);
+      }, 150);
+      return;
+    }
+
+    if (currentView !== 'surat_jalan' && currentView !== 'invoice' && currentView !== 'print_all') {
+      setCurrentView('print_all');
+      setTimeout(() => {
+        window.print();
+        setTimeout(() => {
+          document.title = prevTitle;
+        }, 1500);
+      }, 150);
+      return;
+    }
+
     window.print();
     setTimeout(() => {
       document.title = prevTitle;
@@ -444,11 +467,11 @@ export default function App() {
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse"></span>
                 <span className="font-bold text-sm text-slate-900">
-                  Preview Surat Jalan (Packing List) - Siap Cetak A4
+                  Preview Surat Jalan (Packing List) - Siap Cetak A4 (1 Halaman)
                 </span>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setShowVerificationModal(true)}
@@ -466,6 +489,13 @@ export default function App() {
                 </button>
                 <button
                   type="button"
+                  onClick={() => setCurrentView('print_all')}
+                  className="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold rounded-lg text-xs transition flex items-center gap-1 cursor-pointer"
+                >
+                  <Layers className="w-3.5 h-3.5" /> Cetak Semua (SJ+INV)
+                </button>
+                <button
+                  type="button"
                   onClick={() => setCurrentView('invoice')}
                   className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold rounded-lg text-xs transition flex items-center gap-1 cursor-pointer"
                 >
@@ -473,10 +503,10 @@ export default function App() {
                 </button>
                 <button
                   type="button"
-                  onClick={handlePrint}
-                  className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs shadow transition flex items-center gap-1.5 cursor-pointer"
+                  onClick={() => handlePrint()}
+                  className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-xs shadow transition flex items-center gap-1.5 cursor-pointer"
                 >
-                  <Printer className="w-4 h-4" /> Cetak A4
+                  <Printer className="w-4 h-4" /> Cetak Surat Jalan A4
                 </button>
               </div>
             </div>
@@ -496,11 +526,11 @@ export default function App() {
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse"></span>
                 <span className="font-bold text-sm text-slate-900">
-                  Preview Invoice (Faktur Penjualan) - Siap Cetak A4
+                  Preview Invoice (Faktur Penjualan) - Siap Cetak A4 (1 Halaman)
                 </span>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setShowVerificationModal(true)}
@@ -518,6 +548,13 @@ export default function App() {
                 </button>
                 <button
                   type="button"
+                  onClick={() => setCurrentView('print_all')}
+                  className="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold rounded-lg text-xs transition flex items-center gap-1 cursor-pointer"
+                >
+                  <Layers className="w-3.5 h-3.5" /> Cetak Semua (SJ+INV)
+                </button>
+                <button
+                  type="button"
                   onClick={() => setCurrentView('surat_jalan')}
                   className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold rounded-lg text-xs transition flex items-center gap-1 cursor-pointer"
                 >
@@ -525,10 +562,10 @@ export default function App() {
                 </button>
                 <button
                   type="button"
-                  onClick={handlePrint}
+                  onClick={() => handlePrint()}
                   className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs shadow transition flex items-center gap-1.5 cursor-pointer"
                 >
-                  <Printer className="w-4 h-4" /> Cetak A4
+                  <Printer className="w-4 h-4" /> Cetak Invoice A4
                 </button>
               </div>
             </div>
@@ -553,51 +590,87 @@ export default function App() {
           />
         )}
 
-        {/* MODE 5: DUAL VIEW / CETAK SEMUA */}
+        {/* MODE 5: DUAL VIEW / CETAK SEMUA (SJ + INVOICE DI LEMBAR TERPISAH) */}
         {currentView === 'print_all' && (
           <div className="space-y-8 max-w-5xl mx-auto pb-12">
-            <div className="no-print bg-slate-900 text-white p-4 rounded-xl shadow-md flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h3 className="font-bold text-base flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-amber-400" /> Mode Dual Document (Surat Jalan + Invoice)
+            <div className="no-print bg-slate-900 text-white p-4 sm:p-5 rounded-2xl shadow-md border border-slate-800 flex flex-wrap items-center justify-between gap-4">
+              <div className="space-y-1">
+                <h3 className="font-extrabold text-base flex items-center gap-2 text-white">
+                  <FileText className="w-5 h-5 text-amber-400" /> Cetak Paket Dokumen Lengkap (Surat Jalan & Invoice)
                 </h3>
-                <p className="text-xs text-slate-300 mt-0.5">
-                  Menampilkan kedua dokumen secara berurutan. Saat menekan tombol Cetak, browser akan mencetak Surat Jalan (Halaman 1) dan Invoice (Halaman 2) sekaligus.
+                <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+                  Surat Jalan dan Invoice otomatis dicetak pada lembar halaman A4 yang berbeda (tidak digabung): Halaman 1 khusus <strong className="text-blue-300">Surat Jalan</strong> dan Halaman 2 khusus <strong className="text-emerald-300">Invoice</strong>.
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setCurrentView('edit')}
-                  className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-lg text-xs transition cursor-pointer"
+                  className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs transition border border-slate-700 cursor-pointer"
                 >
-                  Kembali ke Edit Form
+                  Kembali ke Form
                 </button>
                 <button
                   type="button"
-                  onClick={handlePrint}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs shadow transition flex items-center gap-1.5 cursor-pointer"
+                  onClick={() => handlePrint('surat_jalan')}
+                  className="px-3.5 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 font-bold rounded-xl text-xs transition cursor-pointer flex items-center gap-1.5"
+                  title="Cetak Surat Jalan Saja (1 Halaman)"
                 >
-                  <Printer className="w-4 h-4" /> Cetak Kedua Dokumen A4
+                  <Printer className="w-3.5 h-3.5 text-blue-400" /> Cetak SJ Saja
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handlePrint('invoice')}
+                  className="px-3.5 py-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 font-bold rounded-xl text-xs transition cursor-pointer flex items-center gap-1.5"
+                  title="Cetak Invoice Saja (1 Halaman)"
+                >
+                  <Printer className="w-3.5 h-3.5 text-indigo-400" /> Cetak Invoice Saja
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handlePrint()}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-emerald-600/30 transition flex items-center gap-2 cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" /> Cetak Kedua Dokumen (2 Halaman Terpisah)
                 </button>
               </div>
             </div>
 
-            {/* Document 1: Surat Jalan */}
-            <div className="overflow-x-auto">
-              <div className="no-print font-bold text-slate-700 text-xs mb-2 uppercase tracking-wide flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-blue-600"></span> Dokumen 1: SURAT JALAN (PACKING LIST)
+            {/* Document 1: Surat Jalan (Halaman 1) */}
+            <div className="print-page-sj overflow-x-auto">
+              <div className="no-print font-bold text-slate-700 text-xs mb-2 uppercase tracking-wide flex items-center justify-between bg-white px-4 py-2.5 rounded-xl border border-slate-200 shadow-xs">
+                <span className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                  <span className="text-slate-900 font-extrabold">Dokumen 1: SURAT JALAN (PACKING LIST)</span>
+                </span>
+                <span className="text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full">
+                  Dicetak di Halaman 1
+                </span>
               </div>
               <SuratJalanDoc data={data} onOpenVerification={() => setShowVerificationModal(true)} />
             </div>
 
-            <div className="no-print my-6 border-b-2 border-dashed border-slate-300"></div>
+            {/* Visual separator for screen only */}
+            <div className="no-print my-8 border-b-2 border-dashed border-slate-300 flex items-center justify-center">
+              <span className="bg-slate-100 px-4 py-1.5 text-xs font-bold text-slate-500 uppercase tracking-wider rounded-full border border-slate-200 shadow-2xs">
+                ✂ Batas Halaman Cetak • Dokumen Berikutnya Otomatis di Halaman Baru
+              </span>
+            </div>
 
-            {/* Document 2: Invoice */}
-            <div className="overflow-x-auto">
-              <div className="no-print font-bold text-slate-700 text-xs mb-2 uppercase tracking-wide flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-600"></span> Dokumen 2: INVOICE (FAKTUR PENJUALAN)
+            {/* Explicit print-only page break marker */}
+            <div className="print-page-break" aria-hidden="true" />
+
+            {/* Document 2: Invoice (Halaman 2) */}
+            <div className="print-page-inv overflow-x-auto">
+              <div className="no-print font-bold text-slate-700 text-xs mb-2 uppercase tracking-wide flex items-center justify-between bg-white px-4 py-2.5 rounded-xl border border-slate-200 shadow-xs">
+                <span className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                  <span className="text-slate-900 font-extrabold">Dokumen 2: INVOICE (FAKTUR PENJUALAN)</span>
+                </span>
+                <span className="text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                  Dicetak di Halaman 2
+                </span>
               </div>
               <InvoiceDoc data={data} onOpenVerification={() => setShowVerificationModal(true)} />
             </div>
